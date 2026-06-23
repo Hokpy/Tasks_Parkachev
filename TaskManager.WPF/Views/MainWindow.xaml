@@ -1,0 +1,253 @@
+<Window x:Class="TaskManager.WPF.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:TaskManager.WPF.ViewModels"
+        xmlns:local="clr-namespace:TaskManager.WPF.Views"
+        Title="Менеджер задач" Height="700" Width="1060"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BackgroundBrush}">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <!-- Статические ресурсы конвертеров -->
+    <Window.Resources>
+        <local:BoolToStarConverter       x:Key="BoolToStar"/>
+        <local:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <local:PriorityToTextConverter   x:Key="PriToText"/>
+        <local:PriorityToBrushConverter  x:Key="PriToBrush"/>
+        <local:StatusToTextConverter     x:Key="StatToText"/>
+        <local:StatusToBrushConverter    x:Key="StatToBrush"/>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══ СТРОКА 0: Заголовок ═══ -->
+        <Border Grid.Row="0" Background="{StaticResource PrimaryBrush}"
+                CornerRadius="8" Padding="16,10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="📋" FontSize="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="Менеджер задач" FontSize="20" FontWeight="Bold"
+                               Foreground="White" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="💾 Сохранить" Style="{StaticResource SuccessButton}"
+                            Command="{Binding SaveCommand}" Margin="0,0,6,0"/>
+                    <Button Content="📂 Загрузить" Style="{StaticResource ActionButton}"
+                            Command="{Binding LoadCommand}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ СТРОКА 1: Панель инструментов ═══ -->
+        <Border Grid.Row="1" Background="{StaticResource CardBrush}"
+                CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Поиск -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,10,0">
+                    <TextBlock Text="🔍" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBox Style="{StaticResource SearchBox}" Width="200"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Фильтр по статусу -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="Статус:" VerticalAlignment="Center"
+                               FontSize="13" Margin="0,0,6,0" Foreground="#555"/>
+                    <ComboBox Width="130" FontSize="13"
+                              ItemsSource="{Binding StatusFilterItems}"
+                              SelectedItem="{Binding SelectedStatusFilter}"
+                              DisplayMemberPath="Display"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Сортировка -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="Сорт.:" VerticalAlignment="Center"
+                               FontSize="13" Margin="0,0,6,0" Foreground="#555"/>
+                    <Button Content="По приоритету" Style="{StaticResource ActionButton}"
+                            Command="{Binding SortByPriorityCommand}" FontSize="12" Margin="0,0,4,0"/>
+                    <Button Content="По сроку" Style="{StaticResource ActionButton}"
+                            Command="{Binding SortByDueDateCommand}" FontSize="12" Margin="0,0,4,0"/>
+                    <Button Content="✖" Style="{StaticResource ActionButton}"
+                            Command="{Binding ClearSortCommand}"
+                            FontSize="12" ToolTip="Сбросить сортировку"/>
+                </StackPanel>
+
+                <!-- CRUD-кнопки -->
+                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="➕ Добавить"  Style="{StaticResource SuccessButton}"
+                            Command="{Binding AddTaskCommand}"    Margin="0,0,5,0"/>
+                    <Button Content="✏ Изменить"  Style="{StaticResource ActionButton}"
+                            Command="{Binding EditTaskCommand}"   Margin="0,0,5,0"/>
+                    <Button Content="🗑 Удалить"   Style="{StaticResource DangerButton}"
+                            Command="{Binding DeleteTaskCommand}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ СТРОКА 2: DataGrid ═══ -->
+        <Border Grid.Row="2" Background="{StaticResource CardBrush}"
+                CornerRadius="8" Padding="2" Margin="0,0,0,10">
+            <DataGrid ItemsSource="{Binding Tasks}"
+                      SelectedItem="{Binding SelectedTask}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      GridLinesVisibility="Horizontal"
+                      AlternatingRowBackground="#F8F9FA"
+                      RowHeight="36"
+                      FontSize="13"
+                      BorderThickness="0"
+                      MouseDoubleClick="DataGrid_MouseDoubleClick">
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsImportant}" Value="True">
+                                <Setter Property="Background" Value="{StaticResource ImportantRowBrush}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsOverdue}" Value="True">
+                                <Setter Property="Background" Value="{StaticResource OverdueRowBrush}"/>
+                            </DataTrigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#D6EAF8"/>
+                                <Setter Property="Foreground" Value="Black"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+
+                <DataGrid.Columns>
+                    <!-- Важность -->
+                    <DataGridTemplateColumn Header="★" Width="34">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding IsImportant, Converter={StaticResource BoolToStar}}"
+                                           HorizontalAlignment="Center" FontSize="16" Foreground="#F39C12"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Название -->
+                    <DataGridTextColumn Header="Название" Binding="{Binding Title}"
+                                        Width="200" FontWeight="SemiBold"/>
+
+                    <!-- Описание -->
+                    <DataGridTextColumn Header="Описание" Binding="{Binding Description}" Width="*"/>
+
+                    <!-- Приоритет -->
+                    <DataGridTemplateColumn Header="Приоритет" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Center"
+                                        Background="{Binding Priority, Converter={StaticResource PriToBrush}}">
+                                    <TextBlock Text="{Binding Priority, Converter={StaticResource PriToText}}"
+                                               Foreground="White" FontSize="11" FontWeight="Bold"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Срок -->
+                    <DataGridTextColumn Header="Срок" Binding="{Binding DueDate, StringFormat=dd.MM.yyyy}"
+                                        Width="90"/>
+
+                    <!-- Статус -->
+                    <DataGridTemplateColumn Header="Статус" Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Center"
+                                        Background="{Binding Status, Converter={StaticResource StatToBrush}}">
+                                    <TextBlock Text="{Binding Status, Converter={StaticResource StatToText}}"
+                                               Foreground="White" FontSize="11" FontWeight="Bold"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Просрочена -->
+                    <DataGridTemplateColumn Header="!" Width="30">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="⚠" Foreground="#E74C3C" FontSize="14"
+                                           HorizontalAlignment="Center"
+                                           Visibility="{Binding IsOverdue, Converter={StaticResource BoolToVis}}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- ═══ СТРОКА 3: Статистика ═══ -->
+        <Border Grid.Row="3" Background="{StaticResource PrimaryBrush}"
+                CornerRadius="8" Padding="16,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding TotalCount}" FontSize="22" FontWeight="Bold"
+                               Foreground="White" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Всего" FontSize="11" Foreground="#BDC3C7" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding CompletedCount}" FontSize="22" FontWeight="Bold"
+                               Foreground="#2ECC71" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Завершено" FontSize="11" Foreground="#BDC3C7" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding OverdueCount}" FontSize="22" FontWeight="Bold"
+                               Foreground="#E74C3C" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Просрочено" FontSize="11" Foreground="#BDC3C7" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding ImportantCount}" FontSize="22" FontWeight="Bold"
+                               Foreground="#F39C12" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Важных" FontSize="11" Foreground="#BDC3C7" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="4" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding CompletionRate, StringFormat={}{0}%}"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="#3498DB" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Выполнено" FontSize="11" Foreground="#BDC3C7" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
